@@ -1,0 +1,14 @@
+{
+  "loginToken": "jonasholmcorp-79c41322-c43b-4724-ac72-f2968e088bbf",
+  "providerId": "string",
+  "userHash": "string",
+  "redirectUrl": "string",
+  "language": "string",
+  "providers": [
+    "string"
+  ],
+  "excludeProviders": [
+    "string"
+  ],
+  "prefillData": null
+}

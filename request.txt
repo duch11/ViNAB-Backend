@@ -1,0 +1,1 @@
+"curl -H 'X-Client-Id:jonasholmcorp-79c41322-c43b-4724-ac72-f2968e088bbf' -H 'X-Client-Secret:a8fdba9a7d8f3966fa6c902dd0864dfb859fc25c3c718eaee5d844d1922a31e1' -X POST -H 'Content-Type:application/json' -d '{""userHash"":""test-user-id"",""redirectUrl"":""https://httpbin.org/anything""}' https://api.nordicapigateway.com/v1/authentication/initialize" 
