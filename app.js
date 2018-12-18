@@ -1,13 +1,12 @@
-//https://www.youtube.com/watch?v=QgqO-3FAvds&feature=youtu.be&fbclid=IwAR0m2QRxC8W-fFfqltILW0TzQuRJ9MtRAOIcXiJtVd_LMoT-zOknYDzy6LU
-
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
+const log = require("./utils/serverLog");
+
+
+const PORT = 3000;
 const app = express();
-
-
 
 // *********** Include the Api routes ***********
 const accountRoutes = require("./routes/accountRoutes");
@@ -15,19 +14,20 @@ const userRoutes = require("./routes/userRoutes")
 const adminRoutes = require("./routes/adminRoutes")
 
 // *********** Connect to Mongo  ***********
-console.log('Attempting to connect to mongoose');
+log.note("Attempting to connect to mongoose");
 
 mongoose.connect("mongodb://admin:admin1@ds231133.mlab.com:31133/fullstack_db", {useNewUrlParser: true})
   .then(() => {
-    console.log('Connected to Mongo database!');
+    log.success("Connected to Mongo database!");
   })
   .catch(err  => {
-    console.error('App starting error:', err.stack);
+    log.error("Mongo database connection failed.");
+    log.stackTrace(err.stack);
   });
 
 app.use(bodyParser.json());
 
-app.use((req, res, next) => {
+function setHeaders(req, res, next) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers',
       'Origin, X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept');
@@ -36,7 +36,11 @@ app.use((req, res, next) => {
       'GET, POST, PUT, PATCH, DELETE, OPTIONS');
 
   next();
-});
+};
+
+app.use(setHeaders);
+
+
 
 // ******** Setup the Api routes ***********
 app.use("/account", accountRoutes);
@@ -44,8 +48,8 @@ app.use("/user", userRoutes);
 app.use("/admin", adminRoutes)
 
 // App listen
-app.listen(3000, () => {
-  console.log("server listening at port 3000")
+app.listen(PORT, () => {
+  log.success("Server listening at port " + PORT);
 });
 
 module.exports = app;

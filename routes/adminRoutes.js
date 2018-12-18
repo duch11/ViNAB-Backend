@@ -1,39 +1,33 @@
 const express = require("express");
 const userModel = require('../models/user');
 const accountModel = require("../models/account");
-
 const bodyParser = require('body-parser');
+const log =  require
+
+
 const router = express.Router();
 router.use(bodyParser.json());
-
-
-function doIfLoggedIn(adminCode, res, callback) {
-  if(adminCode === "1234"){
-    callback();
-  } else {
-    res.status(401);
-    res.send();
-  }
-}
 
 /**
  * admin/getallusers
  * Return all existing users.
  */
 router.get("/getallusers", (req, res) => {
-  
-  doIfLoggedIn(req.param("adminCode"), res, () => {
+  if(req.param("adminCode") === "1234") {
     userModel.find((err, result) =>{
       if(result) {
         // send users
         console.log("")
         res.json(result);
-      } else {  
+      } else {
         // no users to send
         res.json();
       }
     });
-  });
+  } else {
+    res.status(401);
+    res.send();
+  }
 });
 
 
