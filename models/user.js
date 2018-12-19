@@ -1,5 +1,7 @@
 
 const mongoose = require('mongoose');
+// to avoid deprication warning
+mongoose.set('useFindAndModify', false);
 
 const userSchema = mongoose.Schema({
     email: String,

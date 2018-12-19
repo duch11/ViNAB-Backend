@@ -24,6 +24,14 @@ log.note = (message) => {
     console.log(getMoment() + message + "...");
 }
 
+log.subNote = (message) => {
+    log.note(ARROW+message);
+}
+
+log.requestRecieved = (httpMethod, URL) => {
+    log.note(String(httpMethod).toUpperCase() + " " + String(URL).toLowerCase() + " request recieved");
+}
+
 log.stackTrace = (message) => {
     console.log(chalk.red("====================== [ERROR] ======================"));
     console.log(chalk.red(message));
@@ -35,6 +43,20 @@ log.error = (message) => {
 
 log.subError = (message) => {
     console.log(getMoment() + ARROW + chalk.red(message));
+}
+
+log.dbErrorWithCode = (message,code) => {
+    if(!message){
+        message = "Unknown, see stacktrace";
+    }
+    log.subError("Database error: " + message + ". Reponse: " + code);
+}
+
+log.errorWithCode = (message,code) => {
+    if(!message){
+        message = "Unknown, see stacktrace";
+    }
+    log.subError("Error: " + message + ". Reponse: " + code);
 }
 
 module.exports = log;

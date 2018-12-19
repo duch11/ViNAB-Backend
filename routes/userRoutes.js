@@ -11,65 +11,69 @@ router.use(bodyParser.json());
  * Login user (if he exists in the database)
  */
 router.post("/login", (req, res) => {
-  log.note("POST /login request recieved");
-  // pass email empty?
-  if(req.body.email === "" || req.body.password === ""){
+  log.requestRecieved("POST", "/user/login");
+  // empty body?
+  if(!req.body.email || !req.body.password){
     res.sendStatus(403);
-    log.subError("Email or password Empty, Response: 403");
+    log.dbErrorWithCode("Email or password empty", "403");
   } else {
-    // user found?
+    log.subNote("looking for user");
     userModel.findOne({email: req.body.email}, (error, result) => {
       if(error) {
-        res.status(403).send("Something went wrong");
-        log.subError("Database error recieved");
-        log.stackTrace(error);
-      } else if (result) {
-        if(result.password == req.body.password){
-          log.subSuccess("User found in database");
+        handleError(error, res);
+      } else if (!result) {
+        // user not found
+        log.errorWithCode("User not found", 403);
+        res.status(403).send("User not found");
+
+      } else {
+        // user found
+        log.subSuccess("User found in database");
+        if(result.password != req.body.password) {
+          // bad password
+          log.errorWithCode("Wrong password", 403);
+          res.status(403).send("Wrong password");
+
+        } else {
+          // password match
           log.subSuccess("Passwords match!")
+
           // update status
-          userModel.findOneAndUpdate({email: result.email}, {loggedin: true}, (error, res)=>{
-            if (error) {
-              log.subError("Update login status failed");
-            } else if(res) {
-              log.subSuccess(res.email + " loggedin status updated to " + res.loggedin);
+          userModel.findOneAndUpdate({email: result.email}, {loggedin: true}, (error, result) => {
+            if(error) {
+              log.dbErrorWithCode("Update user.loggedin, failed", 403);
+              res.status(403).send("Login failed");
+            } else if(result) {
+              log.subSuccess(result.email + " loggedin status updated to " + result.loggedin);
+              res.json({
+                "_id":result._id,
+                "email": result.email,
+                "name":result.name
+              });
             }
           });
-
-          // send response
-          res.json({
-            "_id":result._id,
-            "email": result.email,
-            "name":result.name
-          });
         }
-      }
-      // a catch all
-      if(!res.headersSent){
-        log.subError("Headers not sent. Response: 403 wrong credentials.")
-        res.status(403).send("WRONG CREDENTIALS");
       }
     });
   }
 });
-
-// GOT TO HERE!!
 
 /**
  * user/logout
  * Log user out of the account
  */
 router.post("/logout", (req, res) => {
+  log.requestRecieved("post", "/user/logout");
+
   var user = {}
   user._id = req.body._id;
 
-  userModel.findOneAndUpdate({_id: user._id},{loggedin: false}, (err, result) => {
-    if(err) {
-      console.error(err);
-      res.status(403).send();
-    }
-    else{
-      console.log("Server: /user/logout: " + result.name + " logged out");
+  // log off
+  userModel.findOneAndUpdate({_id: user._id},{loggedin: false}, (error, result) => {
+    if(error) {
+      handleError(error, res);
+    } else {
+      log.subSuccess(result.name + " logged out, Response: 200");
       res.status(200).send();
     }
   });
@@ -81,23 +85,29 @@ router.post("/logout", (req, res) => {
  * check if user with this email exist, if not then create new one
  */
 router.post("/create", (req, res) => {
+  log.requestRecieved("POST", "/user/create");
 
-  userModel.findOne({email: req.body.email}, (err, result) => {
-    if(err){
-      console.error(err);
-    }
-    else if(result) {
-      console.log("User with this email already exist!!!")
-      res.status(409).send("User with this email already exist!!!")
-    }
-    else{
-      userModel.create(req.body, (userErr, userResult) => {
-        if(userErr) {
-          console.error(userErr);
+  userModel.findOne({email: req.body.email}, (error, result) => {
+    if(error){
+      // db error
+      handleError(error,res);
+
+    } else if(result) {
+      // email taken
+      log.subError("Email taken, Response 409");
+      res.status(409).send("Email taken");
+
+    } else {
+      // not found, thereby available
+      userModel.create(req.body, (error, result) => {
+        // create error
+        if(error) {
+          log.dbErrorWithCode("", 403);
+          log.stackTrace(error.stackTrace);
           res.sendStatus(403);
-        }
-        else{
-          console.log("Server: /user/create: " + userResult.name + " created");
+        } else {
+          // created
+          log.subSuccess(result.name + " Created");
           res.status(200).json({
             _id: userResult._id,
             name: userResult.name,
@@ -107,10 +117,12 @@ router.post("/create", (req, res) => {
       });
     }
   });
-
-
-
 });
 
+handleError = (error, response) => {
+  log.dbErrorWithCode("", 403);
+  log.stackTrace(error.stackTrace);
+  response.sendStatus(403);
+}
 
 module.exports = router;

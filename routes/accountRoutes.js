@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const router = express.Router();
 router.use(bodyParser.json());
 
+// made it to here
 
 /**
  * check if user is logged in before executing any action

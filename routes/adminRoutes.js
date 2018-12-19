@@ -2,8 +2,7 @@ const express = require("express");
 const userModel = require('../models/user');
 const accountModel = require("../models/account");
 const bodyParser = require('body-parser');
-const log =  require
-
+const log = require("../utils/serverLog");
 
 const router = express.Router();
 router.use(bodyParser.json());
@@ -13,20 +12,26 @@ router.use(bodyParser.json());
  * Return all existing users.
  */
 router.get("/getallusers", (req, res) => {
-  if(req.param("adminCode") === "1234") {
+  log.requestRecieved("GET", "/admin/getallusers");
+  if(req.query.adminCode !== "1234") {
+    // wrong pass
+    log.errorWithCode("Wrong password", 401);
+    res.sendStatus(401);
+
+  } else {
+    // good pass
+    log.subNote("Looking for users");
     userModel.find((err, result) =>{
       if(result) {
         // send users
-        console.log("")
+        log.subSuccess("Users found!");
         res.json(result);
       } else {
+        log.subSuccess("Sending empty users list");
         // no users to send
         res.json();
       }
     });
-  } else {
-    res.status(401);
-    res.send();
   }
 });
 
@@ -36,27 +41,29 @@ router.get("/getallusers", (req, res) => {
  * deletes user
  */
 router.post("/deleteuser", (req, res) => {
+  log.requestRecieved("POST", "/admin/deleteuser");
 
-  userModel.findByIdAndDelete({_id: req.body._id}, (err, result) => {
-    if(err){
-      console.error(err);
-    }
-    else if(result) {
-      console.log("User with id: "+ result._id +" got deleted");
+  //looking for user to delete
+  userModel.findByIdAndDelete({_id: req.body._id}, (error, result) => {
+    if(error){
+      log.dbErrorWithCode("", 500);
+      log.stackTrace(error.stackTrace);
+      res.sendStatus(500);
+    } else if(!result) {
+      log.errorWithCode("User not found", 404);
+      res.send("User not found", 404);
+    } else {
+      log.subSuccess("User with id: "+ result._id +" got deleted");
       res.send("User with id: "+ result._id +" got deleted", 200);
 
       accountModel.deleteMany({owner_id: result._id}, (err) =>{
         if(err){
-          console.error(err);
-        }
-        else{
-          console.log("deleted all accounts for user: " + result.name)
+          log.subError("No accounts found for " + result.name);
+          log.stackTrace(err.stackTrace);
+        } else {
+          log.subSuccess("Deleted all accounts for user: " + result.name);
         }
       });
-    }
-    else{
-      console.log("User with this id does not exist!!!");
-      res.send("User with this id does not exist!!!", 404);
     }
   });
 });
