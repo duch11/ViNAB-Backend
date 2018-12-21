@@ -2,38 +2,42 @@ const express = require("express");
 const accountModel = require('../models/account');
 const userModel = require('../models/user');
 
+const log = require("../utils/serverLog");
+
 const bodyParser = require('body-parser');
 const router = express.Router();
 router.use(bodyParser.json());
 
-// made it to here
+
 
 /**
  * check if user is logged in before executing any action
  */
 function doIfLoggedIn(user_id, res, callback) {
-  console.log("isLoggedIn(" + user_id + ")");
-  if(user_id){
-    userModel.findOne({_id: user_id}, (err, result) => {
-    if(err){
-      console.error(err);
-      res.status(401);
-      res.send();
-      //check login
-    }
+  log.subNote("Checking session");
 
-    if(result.loggedin === true) {
-      console.log("User is logged in!");
-      callback(user_id);
+  userModel.findOne({_id: user_id}, (error, result) => {
+    if(result) {
+      if(result.loggedin === true){
+        log.subSuccess("Session valid");
+        callback(user_id);
+      } else {
+        log.errorWithCode("Session invalid", 401);
+        res.status(401);
+        res.send();
+      }
     } else {
+      if(error) {
+        log.dbErrorWithCode("", 401);
+        log.stackTrace(error.stackTrace);
+      } else {
+        log.errorWithCode("No result", 401);
+      }
+
       res.status(401);
       res.send();
     }
   });
-  } else {
-    res.status(401);
-    res.send();
-  }
 }
 
 /**
@@ -41,16 +45,19 @@ function doIfLoggedIn(user_id, res, callback) {
  * Returns all accounts for user that is logged in.
  */
 router.get("/getall", (req, res) => {
-  console.log("/getall: NEEDS REFACTOR");
-  console.log("/account/getall: " + req.param("owner_id"));
+  //req.params.[param] for /rout/[param]/page
+  //req.query for things after ?[param]=213
+  log.requestRecieved("GET", "/account/getall Params: " + req.query.owner_id);
 
-  doIfLoggedIn(req.param("owner_id"), res, (id) => {
-    accountModel.find({owner_id: id}, (accountError, accountResult) =>{
+  doIfLoggedIn(req.query.owner_id, res, (id) => {
+    accountModel.find({owner_id: id}, (accountError, accountResult) => {
       if(accountResult) {
         // send accounts
+        log.subSuccess("Found " + accountResult.length + " accounts for " + id);
         res.json(accountResult);
       } else {
         // no accounts to send
+        log.subError("No result for query on id: " + id);
         res.json();
       }
     });
@@ -63,19 +70,21 @@ router.get("/getall", (req, res) => {
  * Create new account for user that is logged in
  */
 router.post("/create", (req, res) => {
-  console.log("/account/create: " + req.body.owner_id + " " + req.body.nickName);
+  log.requestRecieved("POST", "/account/create " + req.body.owner_id + " " + req.body.nickName);
 
   doIfLoggedIn(req.body.owner_id, res, (id) => {
-    console.log("Creating..." + req.body.nickName);
-
-    accountModel.create(req.body, (err, result) => {
-      if(err){
-        console.error("Error: " + err);
-      }
+    log.subNote("Creating account for userID: " + id);
+    accountModel.create(req.body, (error, result) => {
       if (result) {
-        console.log("Result: " + result);
+        log.subSuccess("Account " + result.nickName + " created!");
         res.status(200);
         res.json(result);
+      } else {
+        if(error){
+          log.dbErrorWithCode("", 500);
+          log.stackTrace(error.stackTrace);
+          res.sendStatus(500);
+        }
       }
     }); // end of accountmodel.create
   }); // end of doIfLoggedIn + callback
@@ -86,18 +95,23 @@ router.post("/create", (req, res) => {
  *  update user if he is logged in
  */
 router.post("/update", (req, res) => {
-  console.log("/account/update: " + req.body.owner_id + " " + req.body.nickName);
+  log.requestRecieved("POST", "/account/update "+ req.body.owner_id + " " + req.body.nickName);
 
   doIfLoggedIn(req.body.owner_id, res, (id) => {
-    console.log("Updating..." + req.body.nickName);
-
-    accountModel.findByIdAndUpdate({_id: req.body._id}, req.body, (err, result) => {
-      if(err){
-        console.error("Error: " + err);
-      } else {
-        console.log("Result: " + result);
+    log.subNote("Updating account: " + req.body.nickName);
+    accountModel.findByIdAndUpdate({_id: req.body._id}, req.body, (error, result) => {
+      if(result){
+        log.subSuccess("Account updated");
         res.status(200);
         res.json(result);
+      } else {
+        if(error){
+          log.dbErrorWithCode("", 500);
+          log.stackTrace(error.stackTrace);
+        } else {
+          log.errorWithCode("Update failed", 500);
+        }
+        res.sendStatus(500);
       }
     }); // end of accountmodel.create
   }); // end of doIfLoggedIn + callback
@@ -109,20 +123,24 @@ router.post("/update", (req, res) => {
  * delete user if he is logged in
  */
 router.post("/delete", (req, res) => {
-  console.log("/account/delete: " + req.body.owner_id + " " + req.body.nickName);
-
+  log.requestRecieved("POST", "/account/delete " + req.body.owner_id + " " + req.body.nickName);
   doIfLoggedIn(req.body.owner_id, res, (id) => {
-    console.log("deleting..." + req.body.nickName);
 
-    accountModel.findByIdAndDelete({_id: req.body._id}, (err, result) => {
-      if(err){
-        console.error("Error: " + err);
-      }
-      if (result) {
-        console.log("Result: " + result);
+    accountModel.findByIdAndDelete({_id: req.body._id}, (error, result) => {
+      if(result){
+        log.subSuccess("Account deleted");
         res.status(200);
         res.json(result);
+      } else {
+        if(error){
+          log.dbErrorWithCode("", 500);
+          log.stackTrace(error.stackTrace);
+        } else {
+          log.errorWithCode("Delete failed", 500);
+        }
+        res.sendStatus(500);
       }
+
     }); // end of accountmodel.create
   }); // end of doIfLoggedIn + callback
 });

@@ -70,11 +70,17 @@ router.post("/logout", (req, res) => {
 
   // log off
   userModel.findOneAndUpdate({_id: user._id},{loggedin: false}, (error, result) => {
-    if(error) {
-      handleError(error, res);
-    } else {
+
+    if (result) {
       log.subSuccess(result.name + " logged out, Response: 200");
       res.status(200).send();
+    } else {
+      if(error) {
+        handleError(error, res);
+      } else {
+        log.errorWithCode("User not logged out", 500);
+        response.sendStatus(500);
+      }
     }
   });
 });
@@ -109,9 +115,9 @@ router.post("/create", (req, res) => {
           // created
           log.subSuccess(result.name + " Created");
           res.status(200).json({
-            _id: userResult._id,
-            name: userResult.name,
-            email: userResult.email
+            _id: result._id,
+            name: result.name,
+            email: result.email
           });
         }
       });
