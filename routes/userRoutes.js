@@ -1,6 +1,5 @@
 const express = require("express");
 const userModel = require('../models/user');
-var moment = require("moment");
 const bodyParser = require('body-parser');
 const log = require("../utils/serverLog");
 const router = express.Router();

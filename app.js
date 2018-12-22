@@ -10,8 +10,9 @@ const app = express();
 
 // *********** Include the Api routes ***********
 const accountRoutes = require("./routes/accountRoutes");
-const userRoutes = require("./routes/userRoutes")
-const adminRoutes = require("./routes/adminRoutes")
+const userRoutes = require("./routes/userRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const bankRoutes = require("./routes/bankRoutes");
 
 // *********** Connect to Mongo  ***********
 log.note("Attempting to connect to mongoose");
@@ -45,7 +46,8 @@ app.use(setHeaders);
 // ******** Setup the Api routes ***********
 app.use("/account", accountRoutes);
 app.use("/user", userRoutes);
-app.use("/admin", adminRoutes)
+app.use("/admin", adminRoutes);
+app.use("/bank", bankRoutes);
 
 // App listen
 app.listen(PORT, () => {

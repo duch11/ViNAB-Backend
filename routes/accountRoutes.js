@@ -1,44 +1,14 @@
 const express = require("express");
 const accountModel = require('../models/account');
-const userModel = require('../models/user');
 
 const log = require("../utils/serverLog");
 
 const bodyParser = require('body-parser');
+
+const auth = require("../utils/auth");
+
 const router = express.Router();
 router.use(bodyParser.json());
-
-
-
-/**
- * check if user is logged in before executing any action
- */
-function doIfLoggedIn(user_id, res, callback) {
-  log.subNote("Checking session");
-
-  userModel.findOne({_id: user_id}, (error, result) => {
-    if(result) {
-      if(result.loggedin === true){
-        log.subSuccess("Session valid");
-        callback(user_id);
-      } else {
-        log.errorWithCode("Session invalid", 401);
-        res.status(401);
-        res.send();
-      }
-    } else {
-      if(error) {
-        log.dbErrorWithCode("", 401);
-        log.stackTrace(error.stackTrace);
-      } else {
-        log.errorWithCode("No result", 401);
-      }
-
-      res.status(401);
-      res.send();
-    }
-  });
-}
 
 /**
  * account/getall
@@ -49,7 +19,7 @@ router.get("/getall", (req, res) => {
   //req.query for things after ?[param]=213
   log.requestRecieved("GET", "/account/getall Params: " + req.query.owner_id);
 
-  doIfLoggedIn(req.query.owner_id, res, (id) => {
+  auth.doIfLoggedIn(req.query.owner_id, res, (id) => {
     accountModel.find({owner_id: id}, (accountError, accountResult) => {
       if(accountResult) {
         // send accounts
@@ -72,7 +42,7 @@ router.get("/getall", (req, res) => {
 router.post("/create", (req, res) => {
   log.requestRecieved("POST", "/account/create " + req.body.owner_id + " " + req.body.nickName);
 
-  doIfLoggedIn(req.body.owner_id, res, (id) => {
+  auth.doIfLoggedIn(req.body.owner_id, res, (id) => {
     log.subNote("Creating account for userID: " + id);
     accountModel.create(req.body, (error, result) => {
       if (result) {
@@ -97,7 +67,7 @@ router.post("/create", (req, res) => {
 router.post("/update", (req, res) => {
   log.requestRecieved("POST", "/account/update "+ req.body.owner_id + " " + req.body.nickName);
 
-  doIfLoggedIn(req.body.owner_id, res, (id) => {
+  auth.doIfLoggedIn(req.body.owner_id, res, (id) => {
     log.subNote("Updating account: " + req.body.nickName);
     accountModel.findByIdAndUpdate({_id: req.body._id}, req.body, (error, result) => {
       if(result){
@@ -124,7 +94,7 @@ router.post("/update", (req, res) => {
  */
 router.post("/delete", (req, res) => {
   log.requestRecieved("POST", "/account/delete " + req.body.owner_id + " " + req.body.nickName);
-  doIfLoggedIn(req.body.owner_id, res, (id) => {
+  auth.doIfLoggedIn(req.body.owner_id, res, (id) => {
 
     accountModel.findByIdAndDelete({_id: req.body._id}, (error, result) => {
       if(result){
@@ -144,5 +114,6 @@ router.post("/delete", (req, res) => {
     }); // end of accountmodel.create
   }); // end of doIfLoggedIn + callback
 });
+
 
 module.exports = router;
