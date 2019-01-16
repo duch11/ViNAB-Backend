@@ -2,6 +2,7 @@ const express = require("express");
 const accountModel = require('../models/account');
 
 const log = require("../utils/serverLog");
+const err = require("../utils/errorResolver");
 
 const bodyParser = require('body-parser');
 
@@ -17,21 +18,36 @@ router.use(bodyParser.json());
 router.get("/getall", (req, res) => {
   //req.params.[param] for /rout/[param]/page
   //req.query for things after ?[param]=213
-  log.requestRecieved("GET", "/account/getall Params: " + req.query.owner_id);
+  let reqOwnerId = "null";
+  reqOwnerId = req.query.owner_id;
 
-  auth.doIfLoggedIn(req.query.owner_id, res, (id) => {
-    accountModel.find({owner_id: id}, (accountError, accountResult) => {
+  log.requestRecieved("GET", "/account/getall Params: " + reqOwnerId);
+
+  auth.doIfLoggedIn(reqOwnerId, res, () => {
+    findAccount();
+  });
+
+  function findAccount(){
+    accountModel.find({owner_id: reqOwnerId}, (accountError, accountResult) => {
       if(accountResult) {
-        // send accounts
-        log.subSuccess("Found " + accountResult.length + " accounts for " + id);
-        res.json(accountResult);
+        sendAccounts();
       } else {
-        // no accounts to send
-        log.subError("No result for query on id: " + id);
-        res.json();
+        sendNoAccounts();
       }
     });
-  });
+  }
+
+  function sendAccounts(){
+    // send accounts
+    log.subSuccess("Found " + accountResult.length + " accounts for " + reqOwnerId);
+    res.json(accountResult);
+  }
+
+  function sendNoAccounts(){
+    // no accounts to send
+    log.subError("No result for query on id: " + reqOwnerId);
+    res.json();
+  }
 });
 
 
@@ -42,22 +58,34 @@ router.get("/getall", (req, res) => {
 router.post("/create", (req, res) => {
   log.requestRecieved("POST", "/account/create " + req.body.owner_id + " " + req.body.nickName);
 
-  auth.doIfLoggedIn(req.body.owner_id, res, (id) => {
-    log.subNote("Creating account for userID: " + id);
+  auth.doIfLoggedIn(req.body.owner_id, res, () => {
+    createAccount();
+  }); // end of doIfLoggedIn + callback
+
+  function createAccount() {
+    log.subNote("Creating account for userID: " + req.body.owner_id);
     accountModel.create(req.body, (error, result) => {
       if (result) {
-        log.subSuccess("Account " + result.nickName + " created!");
-        res.status(200);
-        res.json(result);
+        accountCreated(result);
       } else {
-        if(error){
-          log.dbErrorWithCode("", 500);
-          log.stackTrace(error.stackTrace);
-          res.sendStatus(500);
-        }
+        createFailed(error);
       }
     }); // end of accountmodel.create
-  }); // end of doIfLoggedIn + callback
+  }
+
+  function accountCreated(result){
+    log.subSuccess("Account " + result.nickName + " created!");
+    res.status(200);
+    res.json(result);
+  }
+
+  function createFailed(error){
+    if(error){
+      log.dbErrorWithCode("", 500);
+      log.stackTrace(error.stackTrace);
+      res.sendStatus(500);
+    }
+  }
 }); // end of post(/create)
 
 /**
@@ -67,24 +95,36 @@ router.post("/create", (req, res) => {
 router.post("/update", (req, res) => {
   log.requestRecieved("POST", "/account/update "+ req.body.owner_id + " " + req.body.nickName);
 
-  auth.doIfLoggedIn(req.body.owner_id, res, (id) => {
+  auth.doIfLoggedIn(req.body.owner_id, res, () => {
+    updateAccount();
+  }); // end of doIfLoggedIn + callback
+
+  function updateAccount(){
     log.subNote("Updating account: " + req.body.nickName);
     accountModel.findByIdAndUpdate({_id: req.body._id}, req.body, (error, result) => {
       if(result){
-        log.subSuccess("Account updated");
-        res.status(200);
-        res.json(result);
+        confirmUpdate(result);
       } else {
-        if(error){
-          log.dbErrorWithCode("", 500);
-          log.stackTrace(error.stackTrace);
-        } else {
-          log.errorWithCode("Update failed", 500);
-        }
-        res.sendStatus(500);
+        updateFailed(error);
       }
     }); // end of accountmodel.create
-  }); // end of doIfLoggedIn + callback
+  }
+
+  function confirmUpdate(result){
+    log.subSuccess("Account updated");
+    res.status(200);
+    res.json(result);
+  }
+
+  function updateFailed(error){
+    if(error){
+      log.dbErrorWithCode("", 500);
+      log.stackTrace(error.stackTrace);
+    } else {
+      log.errorWithCode("Update failed", 500);
+    }
+    res.sendStatus(500);
+  }
 });
 
 
@@ -94,26 +134,38 @@ router.post("/update", (req, res) => {
  */
 router.post("/delete", (req, res) => {
   log.requestRecieved("POST", "/account/delete " + req.body.owner_id + " " + req.body.nickName);
-  auth.doIfLoggedIn(req.body.owner_id, res, (id) => {
+  auth.doIfLoggedIn(req.body.owner_id, res, () => {
+    deleteAccount();
+  }); // end of doIfLoggedIn + callback
 
+  function deleteAccount() {
     accountModel.findByIdAndDelete({_id: req.body._id}, (error, result) => {
       if(result){
-        log.subSuccess("Account deleted");
-        res.status(200);
-        res.json(result);
+        confirmDelete(result);
       } else {
-        if(error){
-          log.dbErrorWithCode("", 500);
-          log.stackTrace(error.stackTrace);
-        } else {
-          log.errorWithCode("Delete failed", 500);
-        }
-        res.sendStatus(500);
+        deleteFailed(error);
       }
-
     }); // end of accountmodel.create
-  }); // end of doIfLoggedIn + callback
+  }
+
+  function confirmDelete(result) {
+    log.subSuccess("Account deleted");
+    res.status(200);
+    res.json(result);
+  }
+  
+  function deleteFailed(error){
+    if(error){
+      log.dbErrorWithCode("", 500);
+      log.stackTrace(error.stackTrace);
+    } else {
+      log.errorWithCode("Delete failed", 500);
+    }
+    res.sendStatus(500);
+  }
 });
+
+
 
 
 module.exports = router;

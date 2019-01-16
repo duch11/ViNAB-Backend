@@ -7,13 +7,15 @@ const log = require("../utils/serverLog");
 const router = express.Router();
 router.use(bodyParser.json());
 
+const PASSWORD = "1234";
+
 /**
  * admin/getallusers
  * Return all existing users.
  */
 router.get("/getallusers", (req, res) => {
   log.requestRecieved("GET", "/admin/getallusers");
-  if(req.query.adminCode !== "1234") {
+  if(req.query.adminCode !== PASSWORD) {
     // wrong pass
     log.errorWithCode("Wrong password", 401);
     res.sendStatus(401);

@@ -12,47 +12,84 @@ router.use(bodyParser.json());
 router.post("/login", (req, res) => {
   log.requestRecieved("POST", "/user/login");
   // empty body?
-  if(!req.body.email || !req.body.password){
-    res.sendStatus(403);
+  checkForEmptyCredentials();
+
+  function checkForEmptyCredentials() {
+    if(req.body.email && req.body.password){
+      findUser();
+    } else {
+      sendEmptyCredentialsError();
+    }
+  }
+
+  function sendEmptyCredentialsError(){
     log.dbErrorWithCode("Email or password empty", "403");
-  } else {
+    res.sendStatus(403);
+  }
+
+  function findUser(){
     log.subNote("looking for user");
     userModel.findOne({email: req.body.email}, (error, result) => {
-      if(error) {
-        handleError(error, res);
-      } else if (!result) {
-        // user not found
-        log.errorWithCode("User not found", 403);
-        res.status(403).send("User not found");
-
-      } else {
+      if (result) {
         // user found
         log.subSuccess("User found in database");
-        if(result.password != req.body.password) {
-          // bad password
-          log.errorWithCode("Wrong password", 403);
-          res.status(403).send("Wrong password");
+        checkPassword(result);
+      } else {
+        sendUserNotFound(error);
+      }
+    });
+  }
 
-        } else {
-          // password match
-          log.subSuccess("Passwords match!")
+  function sendUserNotFound(error){
+    if(error) {
+      log.dbErrorWithCode("While finding user, an error occured", 403);
+      log.stackTrace(error.stackTrace);
+      response.sendStatus(403);
+    } else {
+      // user not found
+      log.errorWithCode("User not found", 403);
+      res.status(403).send("User not found");
+    }
+  }
 
-          // update status
-          userModel.findOneAndUpdate({email: result.email}, {loggedin: true}, (error, result) => {
-            if(error) {
-              log.dbErrorWithCode("Update user.loggedin, failed", 403);
-              res.status(403).send("Login failed");
-            } else if(result) {
-              log.subSuccess(result.email + " loggedin status updated to " + result.loggedin);
-              res.json({
-                "_id":result._id,
-                "email": result.email,
-                "name":result.name
-              });
-            }
-          });
+  function checkPassword(result){
+    if(result.password != req.body.password) {
+      // bad password
+      log.errorWithCode("Wrong password", 403);
+      res.status(403).send("Wrong password");
+    } else {
+      // password match
+      log.subSuccess("Passwords match!")
+      updateStatus();
+    }
+  }
+
+  function updateStatus(){
+    // update status
+    userModel.findOneAndUpdate({email: result.email}, {loggedin: true}, (error, result) => {
+      if(result) {
+        sendLoginSuccess();
+      } else {
+        sendLoginFailed();
+      }
+
+      function sendLoginFailed(){
+        log.dbErrorWithCode("Update user.loggedin, failed", 403);
+        if(error) {
+          log.stackTrace(error.stackTrace)
+          res.status(403).send("Login failed");
         }
       }
+
+      function sendLoginSuccess() {
+        log.subSuccess(result.email + " loggedin status updated to " + result.loggedin);
+        res.json({
+          "_id":result._id,
+          "email": result.email,
+          "name":result.name
+        });
+      }
+       
     });
   }
 });
@@ -75,7 +112,9 @@ router.post("/logout", (req, res) => {
       res.status(200).send();
     } else {
       if(error) {
-        handleError(error, res);
+        log.dbErrorWithCode("", 403);
+        log.stackTrace(error.stackTrace);
+        response.sendStatus(403);
       } else {
         log.errorWithCode("User not logged out", 500);
         response.sendStatus(500);
@@ -95,7 +134,9 @@ router.post("/create", (req, res) => {
   userModel.findOne({email: req.body.email}, (error, result) => {
     if(error){
       // db error
-      handleError(error,res);
+      log.dbErrorWithCode("", 403);
+      log.stackTrace(error.stackTrace);
+      res.sendStatus(403);
 
     } else if(result) {
       // email taken
@@ -123,11 +164,5 @@ router.post("/create", (req, res) => {
     }
   });
 });
-
-handleError = (error, response) => {
-  log.dbErrorWithCode("", 403);
-  log.stackTrace(error.stackTrace);
-  response.sendStatus(403);
-}
 
 module.exports = router;

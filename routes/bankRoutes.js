@@ -11,24 +11,17 @@ router.use(bodyParser.json());
 router.post("/requesturl", (req, res) => {
     log.requestRecieved("POST", "/bank/requesturl");
     let userhash = req.body.userhash;
-    log.subNote("Checking userhash");
-    if(userhash) {
-        log.subSuccess("Userhash present");
-        auth.doIfLoggedIn(userhash, res, ( validHash ) => {
-            bankConnection.getLoginUrl(validHash, ( url ) => {
-                if(url) {
-                    log.subSuccess("Url recieved, sending url");
-                    res.send(url);
-                } else {
-                    log.errorWithCode("no url found", 500);
-                    res.sendStatus(500);
-                }
-            });
+    auth.doIfLoggedIn(userhash, res, () => {
+        bankConnection.getLoginUrl(userhash, (url) => {
+            if(url) {
+                log.subSuccess("Url recieved, sending url");
+                res.send(url);
+            } else {
+                log.errorWithCode("no url found", 500);
+                res.sendStatus(500);
+            }
         });
-    } else {
-        log.subError("Userhash '" + userhash + "' empty");
-        res.sendStatus(404);
-    }
+    });
 
 });
 
