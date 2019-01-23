@@ -16,7 +16,7 @@ module.exports.doIfLoggedIn = (user_id = "null", res, callback) => {
         log.subSuccess("Userhash present");
         findSession();
     } else {
-        err.empty(res);
+        err.emptyRequest(res).send();
     }
   }
   
@@ -26,7 +26,7 @@ module.exports.doIfLoggedIn = (user_id = "null", res, callback) => {
       if(result) {
         checkResult(result);
       } else {
-        err.notFound("Session", error, res);
+        err.notFound("Session", error, res).send();
       }
     });
   }
@@ -36,14 +36,7 @@ module.exports.doIfLoggedIn = (user_id = "null", res, callback) => {
       log.subSuccess("Session valid");
       callback(user_id);
     } else {
-      err.invalid("Session",res);
+      err.invalidRequest("Session",res).send();
     }
   }
 }
-
-
-
-
-
-
-

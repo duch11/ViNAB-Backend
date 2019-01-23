@@ -32,21 +32,22 @@ router.get("/getall", (req, res) => {
       if(accountResult) {
         sendAccounts();
       } else {
+        // no accounts to send
         sendNoAccounts();
+        
+      }
+      
+      function sendAccounts(){
+        // send accounts
+        log.subSuccess("Found " + accountResult.length + " accounts for " + reqOwnerId);
+        res.json(accountResult);
+      }
+
+      function sendNoAccounts(){
+        err.noContentFound("Accounts",accountError, res);
+        res.json();
       }
     });
-  }
-
-  function sendAccounts(){
-    // send accounts
-    log.subSuccess("Found " + accountResult.length + " accounts for " + reqOwnerId);
-    res.json(accountResult);
-  }
-
-  function sendNoAccounts(){
-    // no accounts to send
-    log.subError("No result for query on id: " + reqOwnerId);
-    res.json();
   }
 });
 
@@ -60,7 +61,7 @@ router.post("/create", (req, res) => {
 
   auth.doIfLoggedIn(req.body.owner_id, res, () => {
     createAccount();
-  }); // end of doIfLoggedIn + callback
+  }); 
 
   function createAccount() {
     log.subNote("Creating account for userID: " + req.body.owner_id);
@@ -70,7 +71,7 @@ router.post("/create", (req, res) => {
       } else {
         createFailed(error);
       }
-    }); // end of accountmodel.create
+    }); 
   }
 
   function accountCreated(result){
@@ -80,11 +81,7 @@ router.post("/create", (req, res) => {
   }
 
   function createFailed(error){
-    if(error){
-      log.dbErrorWithCode("", 500);
-      log.stackTrace(error.stackTrace);
-      res.sendStatus(500);
-    }
+    err.internalErrorWhile("creating the account", error, res).send();
   }
 }); // end of post(/create)
 
@@ -117,13 +114,7 @@ router.post("/update", (req, res) => {
   }
 
   function updateFailed(error){
-    if(error){
-      log.dbErrorWithCode("", 500);
-      log.stackTrace(error.stackTrace);
-    } else {
-      log.errorWithCode("Update failed", 500);
-    }
-    res.sendStatus(500);
+    err.internalErrorWhile("Updating account", error, res).send();
   }
 });
 
@@ -155,17 +146,8 @@ router.post("/delete", (req, res) => {
   }
   
   function deleteFailed(error){
-    if(error){
-      log.dbErrorWithCode("", 500);
-      log.stackTrace(error.stackTrace);
-    } else {
-      log.errorWithCode("Delete failed", 500);
-    }
-    res.sendStatus(500);
+    err.internalErrorWhile("deleting account",error,res).send();
   }
 });
-
-
-
 
 module.exports = router;

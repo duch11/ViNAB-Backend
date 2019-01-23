@@ -49,14 +49,14 @@ log.dbErrorWithCode = (message,code) => {
     if(!message){
         message = "Unknown, see stacktrace";
     }
-    log.subError("Database error: " + message + ". Reponse: " + code);
+    log.subError("Database: " + message + ". Response: " + code);
 }
-
+/*sub error with a code*/
 log.errorWithCode = (message,code) => {
     if(!message){
         message = "Unknown, see stacktrace";
     }
-    log.subError("Error: " + message + ". Reponse: " + code);
+    log.subError(message + ". Response: " + code);
 }
 
 module.exports = log;
