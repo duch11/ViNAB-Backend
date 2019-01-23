@@ -2,7 +2,9 @@ const express = require("express");
 const userModel = require('../models/user');
 const accountModel = require("../models/account");
 const bodyParser = require('body-parser');
+
 const log = require("../utils/serverLog");
+const err = require("../utils/errorResolver");
 
 const router = express.Router();
 router.use(bodyParser.json());
@@ -16,9 +18,15 @@ const PASSWORD = "1234";
 router.get("/getallusers", (req, res) => {
   log.requestRecieved("GET", "/admin/getallusers");
   if(req.query.adminCode !== PASSWORD) {
+    
+    
+    //HER TIL 2/2
     // wrong pass
     log.errorWithCode("Wrong password", 401);
     res.sendStatus(401);
+
+
+
 
   } else {
     // good pass

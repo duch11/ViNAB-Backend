@@ -44,8 +44,7 @@ router.get("/getall", (req, res) => {
       }
 
       function sendNoAccounts(){
-        err.noContentFound("Accounts",accountError, res);
-        res.json();
+        err.noContentFound("Accounts",accountError, res).json();
       }
     });
   }

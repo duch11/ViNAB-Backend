@@ -1,14 +1,32 @@
 const log = require("./serverLog");
 
+//ok, but
+const HTTP_OK = 200;
 const HTTP_NO_CONTENT = 202;
+
+//client errors
 const HTTP_BAD_REQUEST = 400;
+const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
+
+//server errors
 const HTTP_INTERNAL_SERVER_ERR = 500;
 
 
 const err = () => {
 };
+
+
+
+
+//HER TIL 1/2
+err.unauthorizedRequest = function(res){
+    return res;
+}
+
+
+
 
 // call when no result found
 err.notFound = function(subject, error, res) {
