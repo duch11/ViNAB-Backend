@@ -2,7 +2,7 @@ const express = require("express");
 const accountModel = require('../models/account');
 
 const log = require("../utils/serverLog");
-const err = require("../utils/errorResolver");
+const errorResolver = require("../utils/errorResolver");
 
 const bodyParser = require('body-parser');
 
@@ -34,7 +34,6 @@ router.get("/getall", (req, res) => {
       } else {
         // no accounts to send
         sendNoAccounts();
-        
       }
       
       function sendAccounts(){
@@ -44,7 +43,7 @@ router.get("/getall", (req, res) => {
       }
 
       function sendNoAccounts(){
-        err.noContentFound("Accounts",accountError, res).json();
+        errorResolver.noContentFound("Accounts",accountError, res).json();
       }
     });
   }
@@ -80,7 +79,7 @@ router.post("/create", (req, res) => {
   }
 
   function createFailed(error){
-    err.internalErrorWhile("creating the account", error, res).send();
+    errorResolver.internalErrorWhile("creating the account", error, res).send();
   }
 }); // end of post(/create)
 
@@ -113,7 +112,7 @@ router.post("/update", (req, res) => {
   }
 
   function updateFailed(error){
-    err.internalErrorWhile("Updating account", error, res).send();
+    errorResolver.internalErrorWhile("Updating account", error, res).send();
   }
 });
 
@@ -145,7 +144,7 @@ router.post("/delete", (req, res) => {
   }
   
   function deleteFailed(error){
-    err.internalErrorWhile("deleting account",error,res).send();
+    errorResolver.internalErrorWhile("deleting account",error,res).send();
   }
 });
 

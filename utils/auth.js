@@ -1,5 +1,5 @@
 const log = require("./serverLog");
-const err = require("./errorResolver");
+const errorResolver = require("./errorResolver");
 const userModel = require('../models/user');
 
 /**
@@ -16,7 +16,7 @@ module.exports.doIfLoggedIn = (user_id = "null", res, callback) => {
         log.subSuccess("Userhash present");
         findSession();
     } else {
-        err.emptyRequest(res).send();
+        errorResolver.emptyRequest(res).send();
     }
   }
   
@@ -26,7 +26,7 @@ module.exports.doIfLoggedIn = (user_id = "null", res, callback) => {
       if(result) {
         checkResult(result);
       } else {
-        err.notFound("Session", error, res).send();
+        errorResolver.notFound("Session", error, res).send();
       }
     });
   }
@@ -36,7 +36,7 @@ module.exports.doIfLoggedIn = (user_id = "null", res, callback) => {
       log.subSuccess("Session valid");
       callback(user_id);
     } else {
-      err.invalidRequest("Session",res).send();
+      errorResolver.invalidRequest("Session",res).send();
     }
   }
 }

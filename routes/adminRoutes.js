@@ -4,7 +4,7 @@ const accountModel = require("../models/account");
 const bodyParser = require('body-parser');
 
 const log = require("../utils/serverLog");
-const err = require("../utils/errorResolver");
+const errorResolver = require("../utils/errorResolver");
 
 const router = express.Router();
 router.use(bodyParser.json());
@@ -18,28 +18,17 @@ const PASSWORD = "1234";
 router.get("/getallusers", (req, res) => {
   log.requestRecieved("GET", "/admin/getallusers");
   if(req.query.adminCode !== PASSWORD) {
-    
-    
-    //HER TIL 2/2
-    // wrong pass
-    log.errorWithCode("Wrong password", 401);
-    res.sendStatus(401);
-
-
-
-
+    errorResolver.unauthorizedRequestWrong("Password",res).send();
   } else {
     // good pass
     log.subNote("Looking for users");
-    userModel.find((err, result) =>{
+    userModel.find((error, result) =>{
       if(result) {
         // send users
         log.subSuccess("Users found!");
         res.json(result);
       } else {
-        log.subSuccess("Sending empty users list");
-        // no users to send
-        res.json();
+        errorResolver.noContentFound("Users", error, res).json();
       }
     });
   }
@@ -55,26 +44,25 @@ router.post("/deleteuser", (req, res) => {
 
   //looking for user to delete
   userModel.findByIdAndDelete({_id: req.body._id}, (error, result) => {
-    if(error){
-      log.dbErrorWithCode("", 500);
-      log.stackTrace(error.stackTrace);
-      res.sendStatus(500);
-    } else if(!result) {
-      log.errorWithCode("User not found", 404);
-      res.send("User not found", 404);
-    } else {
+    if(result){
       log.subSuccess("User with id: "+ result._id +" got deleted");
-      res.send("User with id: "+ result._id +" got deleted", 200);
+      deleteAccounts();
+    } else {
+      errorResolver.notFound("User", error, res).send();
+    }
 
-      accountModel.deleteMany({owner_id: result._id}, (err) =>{
-        if(err){
-          log.subError("No accounts found for " + result.name);
-          log.stackTrace(err.stackTrace);
-        } else {
+    function deleteAccounts(){
+      accountModel.deleteMany({owner_id: result._id}, (err, document) =>{
+        if(document.acknowledged) {
           log.subSuccess("Deleted all accounts for user: " + result.name);
+          res.status(200);
+        } else {
+          errorResolver.noContentFound("Accounts to delete for user: " + result.name, err, res);
         }
+        res.send("User with id: "+ result._id +" got deleted");
       });
     }
+
   });
 });
 
