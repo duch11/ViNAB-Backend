@@ -12,7 +12,7 @@
   "dependencies": {
     "chalk": "^2.4.1",
     "express": "^4.16.4",
-    "moment": "^2.23.0",
+    "moment": "^2.29.4",
     "mongoose": "^5.3.2",
     "opn": "^5.4.0",
     "request": "^2.88.0"
